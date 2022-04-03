@@ -65,6 +65,7 @@ class NoGo:
                 if result == toplay:
                     wins += 1
                 signal.alarm(0)
+                break
                 
             except Exception as e:
                 # exceed 30 sec, it will be killed and instantly loses the game
