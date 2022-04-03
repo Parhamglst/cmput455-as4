@@ -3,12 +3,14 @@
 # Set the path to your python3 above
 
 from gtp_connection import GtpConnection
-from board_util import GoBoardUtil, PASS
+from board_util import GoBoardUtil, BLACK
 from board import GoBoard
 import numpy as np
-from simulation import select_best_move
 from ucb import runUcb
 import pattern
+import signal
+import os, psutil
+
 #################################################
 '''
 This is a uniform random NoGo player served as the starter code
@@ -29,8 +31,6 @@ class NoGo:
 
         self.name = "NoGo4"
         self.version = 1.0
-        self.sim = 10
-        self.limit = 100
         self.random_simulation = False
         self.weights = get_weights()
 
@@ -55,12 +55,28 @@ class NoGo:
         Run simulations for a given move.
         """
         wins = 0
-        for _ in range(self.sim):
-            result = self.simulate(board, move, toplay)
-            if result == toplay:
-                wins += 1
-        return wins
 
+        # memory limit 1GB
+        process = psutil.Process(os.getpid())
+        while process.memory_info().rss < 1e9:
+            try:
+                signal.alarm(self.timelimit)
+                result = self.simulate(board, move, toplay)
+                if result == toplay:
+                    wins += 1
+                signal.alarm(0)
+                
+            except Exception as e:
+                # exceed 30 sec, it will be killed and instantly loses the game
+                if self.board.current_player == BLACK:
+                    self.respond('white')
+                else:
+                    self.respond('black')
+                break
+
+        return wins
+            
+        
     def get_move(self, board, color):
         """
           Run one-ply MC simulations to get a move to play.
@@ -109,12 +125,11 @@ class NoGo:
         Run a simulation game.
         """
 
-        for _ in range(self.limit):
+        legal_moves = GoBoardUtil.generate_legal_moves(self.board, self.board.current_player)
 
+        while (len(legal_moves) > 0):
             color = board.current_player
-
             move = pattern.generated_move(board, color, self.weights)
-
             board.play_move(move, color)
 
         return GoBoardUtil.opponent(color)
