@@ -8,7 +8,6 @@ K = 20
 class GameTree:
     def __init__(self, board) -> None:
         self.root = GoNode(board)
-        self.best_move = None
         self.weights = pattern.get_weights()
 
     def _simulate(self, node):
@@ -80,8 +79,8 @@ class GameTree:
             for edge in cur.children:
                 if edge.move in move_trajectory:
                     edge.update_wl_amaf(wl)
-                cur.update_best_move()
                 bfs.append(edge.node)
+            cur.update_best_move()
 
     def update_root(self, move):
         for edge in self.root.children:
