@@ -89,3 +89,14 @@ def _eight_neighbours(board, point):
         board.board[point + board.NS],  # top center
         board.board[point + board.NS - 1],  # top left
     ]
+
+def get_weights():
+    weight_file = open("weights.txt", "r")
+    weights = weight_file.read().split('\n')
+
+    for i in range(len(weights)):
+
+        if weights[i]:
+            weights[i] = float(weights[i].split(' ')[1])
+
+    return weights

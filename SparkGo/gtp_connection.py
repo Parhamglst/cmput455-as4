@@ -52,8 +52,6 @@ class GtpConnection:
             "gogui-rules_legal_moves":self.gogui_rules_legal_moves_cmd,
             "gogui-rules_final_result":self.gogui_rules_final_result_cmd,
             "timelimit": self.time_limit_cmd,
-            "solve": self.solve_cmd,
-            "policy_moves": self.policy_moves_cmd,
         }
 
         # used for argument checking
@@ -306,6 +304,7 @@ class GtpConnection:
 
             # play that move
             success = self.board.play_move(move, color)
+            self.go_engine.game_tree.update_root(move)
 
             if not success:
                 self.respond('illegal move')
@@ -343,6 +342,7 @@ class GtpConnection:
         if self.board.is_legal(move, color):
             # play that move
             self.board.play_move(move, color)
+            self.go_engine.game_tree.update_root(move)
             self.respond(move_as_string)
         else:
             self.respond("Illegal move: {}".format(move_as_string))
@@ -353,23 +353,6 @@ class GtpConnection:
         '''
         self.timelimit = int(args[0])
         self.respond()
-    
-    def solve_cmd(self, args):
-        # remove this respond and implement this method
-        self.respond('Implement This for Assignment 2')
-            
-    def policy_moves_cmd(self, args):
-        """ 
-        This command gets the set of moves considered by the simulation policy 
-        for the current player in the current position
-        """
-        color = self.board.current_player
-        move_winrates = [] # [['a1', 0.2], ['b2', 0.3], ...]
-        moves, winrates = self.go_engine.get_winrates(self.board, color)
-        for i in range(len(moves)):
-            move_str = format_point(point_to_coord(moves[i], self.board.size))
-            move_winrates.append([move_str, winrates[i]])
-        move_winrates.sort()
         
     """
     ==========================================================================
