@@ -10,7 +10,7 @@ from board_util import (
 )
 import numpy as np
 import random
-
+import os
 
 def lookup(board, point, weights):
     neigh = _eight_neighbours(board, point)
@@ -91,7 +91,7 @@ def _eight_neighbours(board, point):
     ]
 
 def get_weights():
-    weight_file = open("weights.txt", "r")
+    weight_file = open("SparkGo/weights.txt", "r")
     weights = weight_file.read().split('\n')
 
     for i in range(len(weights)):

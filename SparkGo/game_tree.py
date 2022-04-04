@@ -1,4 +1,5 @@
 import numpy as np
+from sympy import E
 import board_util
 import pattern
 
@@ -24,18 +25,20 @@ class GameTree:
         move_trajectory = []
         board_copy = node.board.copy()
         legal_moves = board_util.GoBoardUtil.generate_legal_moves(
-            board_copy, board_copy.color)
+            board_copy, board_copy.current_player)
 
         while (len(legal_moves) > 0):
             move = pattern.generated_move(
-                board_copy, board_copy.color, self.weights)
-            board_copy.play_move(move, board_copy.color)
+                board_copy, board_copy.current_player, self.weights)
+            board_copy.play_move(move, board_copy.current_player)
 
             move_trajectory.append(move)
 
             legal_moves = board_util.GoBoardUtil.generate_legal_moves(
-                board_copy, board_copy.color)
-
+                board_copy, board_copy.current_player)
+        
+        if board_copy.current_player != self.root.board.current_player:
+            wl = 1
         return wl, move_trajectory
 
     def _uct(self):
@@ -47,37 +50,41 @@ class GameTree:
         tree_trajectory = []
 
         current = self.root
-        sim_child = current.max_child()  # type(sim_child) = Edge
+        sim_child, expanded = current.max_child()  # type(sim_child) = Edge
         tree_trajectory.append(sim_child)
-        while board_util.GoBoardUtil.generate_legal_moves(sim_child.node.board, sim_child.node.color):
+        if expanded:
+            return tree_trajectory
+        while board_util.GoBoardUtil.generate_legal_moves(sim_child.node.board, sim_child.node.board.current_player):
             current = sim_child.node
-            sim_child = current.max_child()  # might have issue
+            sim_child, expanded = current.max_child()  # might have issue
             tree_trajectory.append(sim_child)
-
+            if expanded:
+                break
         # The tree trajectory is an array of (action, state) tuples
         # The first tuple which is the root node has None as action
         return tree_trajectory
 
     def mc_rave(self):
         tree_trajectory = self._uct()
-        leaf = tree_trajectory[-1][1]  # Last state
+        leaf = tree_trajectory[-1].node  # Last state
         wl, policy_trajectory = self._simulate(leaf)
 
         # Update the ENTIRE tree (q values, AMAF scores and MCTS values)
         self._update_values(wl, tree_trajectory, policy_trajectory)
-        # TODO:update best move
 
     def _update_values(self, wl, tree_trajectory, move_trajectory):
         # Back propogation
+        wl_cp = wl
         for edge in tree_trajectory:
-            edge.update_wl_sim(wl)
+            edge.update_wl_sim(wl_cp)
+            wl_cp = not wl_cp
 
         # RAVE
         bfs = [self.root]
         while bfs:
             cur = bfs.pop(0)
             for edge in cur.children:
-                if edge.move in move_trajectory:
+                if edge.move in move_trajectory and edge.node.board.current_player != self.root.board.current_player:
                     edge.update_wl_amaf(wl)
                 bfs.append(edge.node)
             cur.update_best_move()
@@ -113,13 +120,13 @@ class GoNode:
         """
         if len(self.children) == len(self.legal_moves):
             # self.update_best_move()
-            return self.best_child
+            return self.best_move, False
         else:
             moves = set(self.legal_moves)
             for child in self.children:
                 moves.remove(child.move)
-            self._expand(moves[0])
-            return self.children[-1]
+            self._expand(moves.pop())
+            return self.children[-1], True
 
     def _expand(self, move):
         """adds an unexpanded child node to self.children according to move
@@ -128,9 +135,9 @@ class GoNode:
             move (str): move that leads to the child state
         """
         board = self.board.copy()
-        opp_color = board_util.GoBoardUtil.opponent(self.board.current_player)
-        board.play_move(move, opp_color)
-        self.children.append((Edge(move), GoNode(board, opp_color)))
+        board.play_move(move, board.current_player)
+        # opp_color = board_util.GoBoardUtil.opponent(board.current_player) # ???????????
+        self.children.append(Edge(move, GoNode(board)))
 
     def has_move(self, move):
         for child in self.children:
@@ -140,7 +147,7 @@ class GoNode:
 
     def update_best_move(self):
         if self.children:
-            self.best_child = max(self.children, lambda k: self.children[k].q)
+            self.best_move = max(self.children, key=lambda k: k.q)
 
     def get_best(self):
         return self.best_move
@@ -165,7 +172,7 @@ class Edge:
         self.number_of_simulations += 1
         if wl == 1:
             self.mcts_wins += 1
-        self._update_params()
+        self.mcts_val = self.mcts_wins/self.number_of_simulations
 
     def update_wl_amaf(self, wl):
         self.amaf_encounters += 1
@@ -174,7 +181,6 @@ class Edge:
         self._update_params()
 
     def _update_params(self):
-        self.mcts_val = self.mcts_wins/self.number_of_simulations
         self.amaf_score = self.amaf_wins/self.amaf_encounters
 
         alpha = max(0, (K - self.number_of_simulations) /

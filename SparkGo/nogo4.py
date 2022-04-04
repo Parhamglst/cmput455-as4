@@ -6,11 +6,15 @@ from gtp_connection import GtpConnection
 from board_util import GoBoardUtil, BLACK
 from board import GoBoard
 import numpy as np
-from ucb import runUcb
 import pattern
 import signal
 import os, psutil
 import game_tree
+import time
+
+
+ERR_TIMELIMIT = "timelimit reached"
+
 
 #################################################
 '''
@@ -34,6 +38,7 @@ class NoGo:
         self.version = 1.0
         self.board = board
         self.game_tree = game_tree.GameTree(self.board)
+        self.timelimit = 5
             
         
     def get_move(self, board, color):
@@ -41,18 +46,29 @@ class NoGo:
         Run simulations for a given move.
         """
         # memory limit 1GB
+        
+        # signal.signal(signal.SIGALRM, self._timeout_handler)
+        # signal.alarm(self.timelimit)
+        # try:
+        for i in range(100):
+            start = time.process_time()
+            self.game_tree.mc_rave()
+            time_used = time.process_time() - start
+            print(i, time_used)
+        # except Exception as e:
+        #     # exceed 30 sec, it will be killed
+        #     print(e)
+        # finally:
+        #     signal.alarm(0)
+        return self.game_tree.root.get_best().move
+    
+    def memory_while(self):
         process = psutil.Process(os.getpid())
         while process.memory_info().rss < 1e9:
-            try:
-                signal.alarm(self.timelimit)
-                self.game_tree.mc_rave()
-                signal.alarm(0)
-                break
-                
-            except Exception as e:
-                # exceed 30 sec, it will be killed
-                break
-        return self.game_tree.get_best()
+            self.game_tree.mc_rave()
+    
+    def _timeout_handler(self, num, stack):
+        raise Exception(ERR_TIMELIMIT)
         
         
 
