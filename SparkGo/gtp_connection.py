@@ -304,7 +304,7 @@ class GtpConnection:
 
             # play that move
             success = self.board.play_move(move, color)
-            self.go_engine.game_tree.update_root(move)
+            
 
             if not success:
                 self.respond('illegal move')
@@ -313,7 +313,7 @@ class GtpConnection:
                 self.debug_msg(
                     "Move: {}\nBoard:\n{}\n".format(board_move, self.board2d())
                 )
-
+            self.go_engine.game_tree.update_root(move)
             self.respond()
         except Exception as e:
             self.respond("Error: {}".format(str(e)))

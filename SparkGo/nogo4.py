@@ -52,7 +52,7 @@ class NoGo:
         # try:
         for i in range(100):
             start = time.process_time()
-            self.game_tree.mc_rave()
+            self.game_tree.mc_rave(color)
             time_used = time.process_time() - start
             # print(i, time_used)
         # except Exception as e:
@@ -61,13 +61,14 @@ class NoGo:
         # finally:
         #     signal.alarm(0)
         q_vals = [i.q for i in self.game_tree.root.children]
-        print(self.game_tree.root.get_best().move, self.game_tree.root.get_best().q, q_vals, len(q_vals))
+        # print(self.game_tree.root.get_best().move, self.game_tree.root.get_best().q, q_vals, len(q_vals))
+        print (self.game_tree.root.board.current_player, len(self.game_tree.root.legal_moves))
         return self.game_tree.root.get_best().move
     
-    def memory_while(self):
+    def memory_while(self, color):
         process = psutil.Process(os.getpid())
         while process.memory_info().rss < 1e9:
-            self.game_tree.mc_rave()
+            self.game_tree.mc_rave(color)
     
     def _timeout_handler(self, num, stack):
         raise Exception(ERR_TIMELIMIT)

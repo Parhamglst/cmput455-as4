@@ -3,13 +3,14 @@ from sympy import E
 import board_util
 import pattern
 
-K = 20
+K = 10
 
 
 class GameTree:
     def __init__(self, board) -> None:
         self.root = GoNode(board)
         self.weights = pattern.get_weights()
+        self.color = 0
 
     def _simulate(self, node):
         """performs a simulation on the given node
@@ -64,13 +65,19 @@ class GameTree:
         # The first tuple which is the root node has None as action
         return tree_trajectory
 
-    def mc_rave(self):
+    def mc_rave(self, color):
+        if self.color == 0:
+            self.root.board.current_player = color
+            self.color = color
+        if self.root.board.current_player != color:
+            raise(Exception)
         tree_trajectory = self._uct()
         leaf = tree_trajectory[-1].node  # Last state
         wl, policy_trajectory = self._simulate(leaf)
 
         # Update the ENTIRE tree (q values, AMAF scores and MCTS values)
         self._update_values(wl, tree_trajectory, policy_trajectory)
+        return
 
     def _update_values(self, wl, tree_trajectory, move_trajectory):
         # Back propogation
@@ -98,6 +105,7 @@ class GameTree:
                 self.root = edge.node
                 return
         board = self.root.board.copy()
+        board.current_player = board_util.GoBoardUtil.opponent(self.root.board.current_player)
         self.root = GoNode(board)
 
 
