@@ -54,12 +54,14 @@ class NoGo:
             start = time.process_time()
             self.game_tree.mc_rave()
             time_used = time.process_time() - start
-            print(i, time_used)
+            # print(i, time_used)
         # except Exception as e:
         #     # exceed 30 sec, it will be killed
         #     print(e)
         # finally:
         #     signal.alarm(0)
+        q_vals = [i.q for i in self.game_tree.root.children]
+        print(self.game_tree.root.get_best().move, self.game_tree.root.get_best().q, q_vals, len(q_vals))
         return self.game_tree.root.get_best().move
     
     def memory_while(self):

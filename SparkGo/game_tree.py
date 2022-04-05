@@ -77,7 +77,10 @@ class GameTree:
         wl_cp = wl
         for edge in tree_trajectory:
             edge.update_wl_sim(wl_cp)
-            wl_cp = not wl_cp
+            if wl_cp == 1:
+                wl_cp = 0
+            else:
+                wl_cp = 1
 
         # RAVE
         bfs = [self.root]
@@ -116,16 +119,16 @@ class GoNode:
 
         Returns:
             GoNode: node to be simulated on
-            bool: True if we expanded a child, False if we just returned an already exxpanded child
+            bool: True if we expanded a child, False if we just returned an already expanded child
         """
         if len(self.children) == len(self.legal_moves):
             # self.update_best_move()
             return self.best_move, False
         else:
-            moves = set(self.legal_moves)
+            moves = list(self.legal_moves)
             for child in self.children:
                 moves.remove(child.move)
-            self._expand(moves.pop())
+            self._expand(np.random.choice(moves))
             return self.children[-1], True
 
     def _expand(self, move):
@@ -173,6 +176,9 @@ class Edge:
         if wl == 1:
             self.mcts_wins += 1
         self.mcts_val = self.mcts_wins/self.number_of_simulations
+        
+        alpha = max(0, (K - self.number_of_simulations) / K)
+        self.q = alpha * self.amaf_score + (1 - alpha) * self.mcts_val
 
     def update_wl_amaf(self, wl):
         self.amaf_encounters += 1
@@ -183,6 +189,5 @@ class Edge:
     def _update_params(self):
         self.amaf_score = self.amaf_wins/self.amaf_encounters
 
-        alpha = max(0, (K - self.number_of_simulations) /
-                    self.number_of_simulations)
+        alpha = max(0, (K - self.number_of_simulations) / K)
         self.q = alpha * self.amaf_score + (1 - alpha) * self.mcts_val
