@@ -45,23 +45,9 @@ class NoGo:
         """
         Run simulations for a given move.
         """
-        # memory limit 1GB
-        
-        # signal.signal(signal.SIGALRM, self._timeout_handler)
-        # signal.alarm(self.timelimit)
-        # try:
         start = time.process_time()
-        while time.process_time() - start < 5:
+        while time.process_time() - start < 29:
             self.game_tree.mc_rave(color)
-            # print(i, time_used)
-        # except Exception as e:
-        #     # exceed 30 sec, it will be killed
-        #     print(e)
-        # finally:
-        #     signal.alarm(0)
-        # q_vals = [i.q for i in self.game_tree.root.children]
-        # print(self.game_tree.root.get_best().move, self.game_tree.root.get_best().q, q_vals, len(q_vals))
-        # print (self.game_tree.root.board.current_player, len(self.game_tree.root.legal_moves))
         return self.game_tree.root.get_best().move
     
     def memory_while(self, color):

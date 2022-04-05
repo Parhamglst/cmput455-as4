@@ -2,7 +2,7 @@ import numpy as np
 import board_util
 import pattern
 
-K = 20
+K = 15
 
 
 class GameTree:
@@ -80,13 +80,8 @@ class GameTree:
 
     def _update_values(self, wl, tree_trajectory, move_trajectory):
         # Back propogation
-        wl_cp = wl
         for edge in tree_trajectory:
-            edge.update_wl_sim(wl_cp)
-            if wl_cp == 1:
-                wl_cp = 0
-            else:
-                wl_cp = 1
+                edge.update_wl_sim(wl)
 
         # RAVE
         bfs = [self.root]
@@ -105,7 +100,7 @@ class GameTree:
                 return
         board = self.root.board.copy()
         board.play_move(move, self.root.board.current_player)
-        board.current_player = board_util.GoBoardUtil.opponent(self.root.board.current_player)
+        # board.current_player = board_util.GoBoardUtil.opponent(self.root.board.current_player)
         self.root = GoNode(board)
 
 
