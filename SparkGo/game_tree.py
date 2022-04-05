@@ -105,6 +105,7 @@ class GameTree:
                 self.root = edge.node
                 return
         board = self.root.board.copy()
+        board.play_move(move, self.root.board.current_player)
         board.current_player = board_util.GoBoardUtil.opponent(self.root.board.current_player)
         self.root = GoNode(board)
 
@@ -158,7 +159,7 @@ class GoNode:
 
     def update_best_move(self):
         if self.children:
-            self.best_move = max(self.children, key=lambda k: k.q)
+            self.best_move = max(self.children, key=lambda k: k.number_of_simulations)
 
     def get_best(self):
         return self.best_move
