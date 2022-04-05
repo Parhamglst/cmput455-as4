@@ -2,7 +2,7 @@ import numpy as np
 import board_util
 import pattern
 
-K = 10
+K = 20
 
 
 class GameTree:
@@ -158,7 +158,7 @@ class GoNode:
 
     def update_best_move(self):
         if self.children:
-            self.best_move = max(self.children, key=lambda k: k.number_of_simulations)
+            self.best_move = max(self.children, key=lambda k: k.q)
 
     def get_best(self):
         return self.best_move

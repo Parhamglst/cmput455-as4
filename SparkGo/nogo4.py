@@ -51,7 +51,7 @@ class NoGo:
         # signal.alarm(self.timelimit)
         # try:
         start = time.process_time()
-        while time.process_time() - start < 1:
+        while time.process_time() - start < 5:
             self.game_tree.mc_rave(color)
             # print(i, time_used)
         # except Exception as e:

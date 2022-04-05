@@ -3,8 +3,8 @@ import pexpect
 
 # path to the two players
 # player 1 plays first
-player2='random_player/nogo_random.py'
-player1='SparkGo/nogo4.py' 
+player1='ucb_player/nogo_ucb.py'
+player2='SparkGo/nogo4.py' 
 
 # stats for win/timeout
 # note that timeout is considered lost
