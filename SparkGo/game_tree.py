@@ -1,5 +1,4 @@
 import numpy as np
-from sympy import E
 import board_util
 import pattern
 
