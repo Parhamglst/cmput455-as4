@@ -46,9 +46,10 @@ class NoGo:
         Run simulations for a given move.
         """
         start = time.process_time()
+        best = None
         while time.process_time() - start < 29:
-            self.game_tree.mc_rave(color)
-        return self.game_tree.root.get_best().move
+            best = self.game_tree.mc_rave(color)
+        return best
     
     def memory_while(self, color):
         process = psutil.Process(os.getpid())
