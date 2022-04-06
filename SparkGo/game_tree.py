@@ -101,7 +101,8 @@ class GameTree:
                 A.append(edge[0])
         A = A + move_trajectory
         for t in range(len(S)):
-            S[t].mcts_vals[A[t]][1] += 1
+            if t < len(A):
+                S[t].mcts_vals[A[t]][1] += 1
             if wl == 1:
                 S[t].mcts_vals[A[t]][0] += 1
             s = S[t]
