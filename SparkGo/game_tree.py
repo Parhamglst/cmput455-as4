@@ -1,9 +1,10 @@
+from ast import Try
 import math
 import numpy as np
 import board_util
 import pattern
 
-B = 0.5
+B = 1
 EXPLORE_RATE = 1
 
 
@@ -130,12 +131,15 @@ class GameTree:
                     s.mcts_vals[A[t]][0] += 1
                 elif wl == 0 and s.board.current_player != S[0].board.current_player:
                     s.mcts_vals[A[t]][0] += 1
-            for u in range(t, len(A), 2):
-                s.amaf_vals[A[u]][1] += 1 # N++
-                if wl == 1 and s.board.current_player == S[0].board.current_player:
-                    s.amaf_vals[A[u]][0] += 1 # Q++
-                elif wl == 0 and s.board.current_player != S[0].board.current_player:
-                    s.amaf_vals[A[u]][0] += 1
+            for u in range(t, len(A)):
+                try:
+                    s.amaf_vals[A[u]][1] += 1 # N++
+                    if wl == 1 and s.board.current_player == S[0].board.current_player:
+                        s.amaf_vals[A[u]][0] += 1 # Q++
+                    elif wl == 0 and s.board.current_player != S[0].board.current_player:
+                        s.amaf_vals[A[u]][0] += 1
+                except Exception as e:
+                    print(e)
 
                 
 
