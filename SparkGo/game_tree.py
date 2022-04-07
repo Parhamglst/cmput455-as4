@@ -236,7 +236,7 @@ class GoNode:
         # opp_color = board_util.GoBoardUtil.opponent(board.current_player) # ???????????
         self.children[move] = GoNode(board)
     
-    def evaluate(self, a, ):
+    def evaluate(self, a):
         amaf_score = self.amaf_vals[a][0]/self.amaf_vals[a][1]
         mcts_score = self.mcts_vals[a][0]/self.mcts_vals[a][1]
         
@@ -244,8 +244,8 @@ class GoNode:
         for m in self.mcts_vals.keys():
             total_sims += self.mcts_vals[m][1]
         theta = EXPLORE_RATE * math.sqrt(math.log(total_sims + 1))
-        alpha = self.amaf_vals[a][1]/(self.mcts_vals[a][1] + self.amaf_vals[a][1] + 4 * self.mcts_vals[a][1] * self.amaf_vals[a][1] * pow(B, 2)) + theta * math.sqrt(1/(self.mcts_vals[a][1] + 1))
-        return alpha * amaf_score + (1 - alpha) * mcts_score
+        alpha = self.amaf_vals[a][1]/(self.mcts_vals[a][1] + self.amaf_vals[a][1] + 4 * self.mcts_vals[a][1] * self.amaf_vals[a][1] * pow(B, 2))
+        return alpha * amaf_score + (1 - alpha) * mcts_score + theta * math.sqrt(1/(self.mcts_vals[a][1] + 1))
     
 def play_game(board):
     """
