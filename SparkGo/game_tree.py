@@ -1,8 +1,10 @@
+import math
 import numpy as np
 import board_util
 import pattern
 
-K = 15
+B = 0.5
+EXPLORE_RATE = 1
 
 
 class GameTree:
@@ -22,19 +24,39 @@ class GameTree:
             int: 1 if the trajectory won for the node's current player
             np.Array: trajectory that the default policy traversed
         """
-        wl = 0
+        winner = 0
         move_trajectory = []
         board_copy = node.board.copy()
-
-        while not self.gameOver(board_copy):
-            move = self.defaultPolicy(board_copy)
-            board_copy.play_move(move, board_copy.current_player)
-
-            move_trajectory.append(move)
         
-        if board_copy.current_player != self.root.board.current_player:
-            wl = 1
-        return wl, move_trajectory
+        while True:
+            # play a random move for the current player
+            color = board_copy.current_player
+            move = pattern.generated_move(board_copy,color, self.weights)
+            board_copy.play_move(move, color)
+
+            # current player is passing
+            if move is None:
+                break
+            move_trajectory.append(move)
+            
+        winner = board_util.GoBoardUtil.opponent(color)
+            
+        if winner == self.root.board.current_player:
+            winner = 1
+        else:
+            winner = 0
+        return winner, move_trajectory
+
+        # while not self.gameOver(board_copy):
+        #     move = self.defaultPolicy(board_copy)
+        #     board_copy.play_move(move, board_copy.current_player)
+        #     if move == None:
+        #         break
+        #     move_trajectory.append(move)
+        
+        # if board_copy.current_player != self.root.board.current_player:
+        #     wl = 1
+        # return wl, move_trajectory
     
     def defaultPolicy(self, board_copy):
         move = pattern.generated_move(
@@ -101,15 +123,19 @@ class GameTree:
                 A.append(edge[0])
         A = A + move_trajectory
         for t in range(len(S)):
-            if t < len(A):
-                S[t].mcts_vals[A[t]][1] += 1
-            if wl == 1:
-                S[t].mcts_vals[A[t]][0] += 1
             s = S[t]
+            if t < len(A):
+                s.mcts_vals[A[t]][1] += 1
+                if wl == 1 and s.board.current_player == S[0].board.current_player:
+                    s.mcts_vals[A[t]][0] += 1
+                elif wl == 0 and s.board.current_player != S[0].board.current_player:
+                    s.mcts_vals[A[t]][0] += 1
             for u in range(t, len(A), 2):
                 s.amaf_vals[A[u]][1] += 1 # N++
-                if wl == 1:
+                if wl == 1 and s.board.current_player == S[0].board.current_player:
                     s.amaf_vals[A[u]][0] += 1 # Q++
+                elif wl == 0 and s.board.current_player != S[0].board.current_player:
+                    s.amaf_vals[A[u]][0] += 1
 
                 
 
@@ -165,31 +191,38 @@ class GoNode:
         eval_actions = enumerate(eval_actions)
         expanded = False
 
-        if self.board.current_player == root.board.current_player:
-            maxI = max(eval_actions, key=lambda k: k[1])[0]
-            if self.legal_moves[maxI] not in self.children.keys():
-                self._expand(self.legal_moves[maxI])
-                expanded = True
-            return self.legal_moves[maxI], self.children[self.legal_moves[maxI]], expanded
-        else:
-            minI = min(eval_actions, key=lambda k: k[1])[0]
-            if self.legal_moves[minI] not in self.children.keys():
-                self._expand(self.legal_moves[minI])
-                expanded = True
-            return self.legal_moves[minI], self.children[self.legal_moves[minI]], expanded
+        # if self.board.current_player == root.board.current_player:
+        maxI = max(eval_actions, key=lambda k: k[1])[0]
+        if self.legal_moves[maxI] not in self.children.keys():
+            self._expand(self.legal_moves[maxI])
+            expanded = True
+        return self.legal_moves[maxI], self.children[self.legal_moves[maxI]], expanded
+        # else:
+        #     minI = min(eval_actions, key=lambda k: k[1])[0]
+        #     if self.legal_moves[minI] not in self.children.keys():
+        #         self._expand(self.legal_moves[minI])
+        #         expanded = True
+        #     return self.legal_moves[minI], self.children[self.legal_moves[minI]], expanded
     
     def bestMove(self, root):
+        # maxN = 0
+        # m = None
+        # for move in self.mcts_vals.keys():
+        #     if self.mcts_vals[move][1] > maxN:
+        #         maxN = self.mcts_vals[move][1]
+        #         m = move
+        # return m
         eval_actions = []
         for a in self.legal_moves:
             eval_actions.append(self.evaluate(a))
         eval_actions = enumerate(eval_actions)
 
-        if self.board.current_player == root.board.current_player:
-            maxI = max(eval_actions, key=lambda k: k[1])[0]
-            return self.legal_moves[maxI]
-        else:
-            minI = min(eval_actions, key=lambda k: k[1])[0]
-            return self.legal_moves[minI]
+        # if self.board.current_player == root.board.current_player:
+        maxI = max(eval_actions, key=lambda k: k[1])[0]
+        return self.legal_moves[maxI]
+        # else:
+        #     minI = min(eval_actions, key=lambda k: k[1])[0]
+        #     return self.legal_moves[minI]
                 
 
     def _expand(self, move):
@@ -203,10 +236,31 @@ class GoNode:
         # opp_color = board_util.GoBoardUtil.opponent(board.current_player) # ???????????
         self.children[move] = GoNode(board)
     
-    def evaluate(self, a):
+    def evaluate(self, a, ):
         amaf_score = self.amaf_vals[a][0]/self.amaf_vals[a][1]
         mcts_score = self.mcts_vals[a][0]/self.mcts_vals[a][1]
         
-        alpha = max(0, (K - self.mcts_vals[a][1]) / K)
+        total_sims = 0
+        for m in self.mcts_vals.keys():
+            total_sims += self.mcts_vals[m][1]
+        theta = EXPLORE_RATE * math.sqrt(math.log(total_sims + 1))
+        alpha = self.amaf_vals[a][1]/(self.mcts_vals[a][1] + self.amaf_vals[a][1] + 4 * self.mcts_vals[a][1] * self.amaf_vals[a][1] * pow(B, 2)) + theta * math.sqrt(1/(self.mcts_vals[a][1] + 1))
         return alpha * amaf_score + (1 - alpha) * mcts_score
     
+def play_game(board):
+    """
+    Run a simulation game to the end fromt the current board
+    """
+    while True:
+        # play a random move for the current player
+        color = board.current_player
+        move = board_util.GoBoardUtil.generate_random_move(board,color)
+        board.play_move(move, color)
+
+        # current player is passing
+        if move is None:
+            break
+
+    # get winner
+    winner = board_util.GoBoardUtil.opponent(color)
+    return winner
